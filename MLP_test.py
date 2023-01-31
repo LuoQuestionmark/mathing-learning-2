@@ -9,7 +9,7 @@ def load_mnist(path, kind='train'):
     images_path = os.path.join(path, '%s-images-idx3-ubyte' % kind)
 
     with open(labels_path, 'rb') as lbpath:
-        magic, n = struct.unpack('>II', lbpath.read(8))
+        magic, n = struct.unpack('>ii', lbpath.read(8))
         labels = np.fromfile(lbpath, dtype=np.uint8)
 
     with open(images_path, 'rb') as imgpath:
@@ -19,8 +19,8 @@ def load_mnist(path, kind='train'):
     return images, labels
 
 
-X_train, y_train = load_mnist('C:/Users/Nours/PycharmProjects/DeepLearning/', kind='train')
-X_test, y_test = load_mnist('C:/Users/Nours/PycharmProjects/DeepLearning/', kind='t10k')
+X_train, y_train = load_mnist('./', kind='train')
+X_test, y_test = load_mnist('./', kind='t10k')
 
 
 
