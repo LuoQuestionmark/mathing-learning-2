@@ -149,7 +149,8 @@ class NeuralNetMLP(object):
         a2 = self._add_bias_unit(a2, how='row')
         z3 = w2.dot(a2)
         a3 = self._sigmoid(z3)
-        return a1, z2, a2, z3, a3
+        # return a1, z2, a2, z3, a3
+        return [a1, a2, a3], [z2, z3]
 
     def _L2_reg(self, lambda_, w1, w2):
         """Compute L2-regularization cost"""
@@ -255,7 +256,7 @@ class NeuralNetMLP(object):
                                  'Use X[:,None] for 1-feature classification,'
                                  '\nor X[[i]] for 1-sample classification')
 
-        a1, z2, a2, z3, a3 = self._feedforward(X, self.w1, self.w2)
+        [a1, a2, a3], [z2, z3] = self._feedforward(X, self.w1, self.w2)
         y_pred = np.argmax(z3, axis=0)
         return y_pred
 
@@ -304,8 +305,10 @@ class NeuralNetMLP(object):
                                   self.minibatches)  # Si le mode minibatch est activé, le dataset en entrée est divisé en batch pour le calcul des gradients
             for idx in mini:
                 # feedforward
-                a1, z2, a2, z3, a3 = self._feedforward(X_data[idx], self.w1,
-                                                       self.w2)  # Ce que nous avons vu jusqu'à présent
+                # a1, z2, a2, z3, a3 = self._feedforward(X_data[idx], self.w1,
+                #                                        self.w2)  # Ce que nous avons vu jusqu'à présent
+                [a1, a2, a3], [z2, z3] = self._feedforward(X_data[idx], self.w1, self.w2) 
+
                 cost = self._get_cost(y_enc=y_enc[:, idx], output=a3, w1=self.w1, w2=self.w2)
                 self.cost_.append(cost)
 
