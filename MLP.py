@@ -53,7 +53,7 @@ class NeuralNetMLP(object):
         self.n_output = n_output
         self.n_features = n_features
         self.n_hidden = n_hidden
-        self.w1, self.w2 = self._initialize_weights()
+        [self.w1, self.w2] = self._initialize_weights()
         self.l1 = l1
         self.l2 = l2
         self.epochs = epochs
@@ -88,7 +88,7 @@ class NeuralNetMLP(object):
         w2 = np.random.uniform(-1.0, 1.0,
                                size=self.n_output * (self.n_hidden + 1))
         w2 = w2.reshape(self.n_output, self.n_hidden + 1)
-        return w1, w2
+        return (w1, w2)
 
     def _sigmoid(self, z):
         """Compute logistic function (sigmoid)
