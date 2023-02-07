@@ -53,8 +53,9 @@ class NeuralNetMLP(object):
         self.n_output = n_output
         self.n_features = n_features
         self.n_hidden = n_hidden
-        # [self.w1, self.w2] = self._initialize_weights()
+        # self.w1, self.w2 = self._initialize_weights()
         self.weights = self._initialize_weights()
+
         self.l1 = l1
         self.l2 = l2
         self.epochs = epochs
@@ -189,17 +190,29 @@ class NeuralNetMLP(object):
         ax.append(a_end)
         return ax, zx
 
-    def _L2_reg(self, lambda_, w1, w2):
-        """Compute L2-regularization cost"""
-        return (lambda_ / 2.0) * (np.sum(w1[:, 1:] ** 2) +
-                                  np.sum(w2[:, 1:] ** 2))
+    # old version
+    # def _L2_reg(self, lambda_, w1, w2):
+    #     """Compute L2-regularization cost"""
+    #     return (lambda_ / 2.0) * (np.sum(w1[:, 1:] ** 2) +
+    #                               np.sum(w2[:, 1:] ** 2))
+    # def _L1_reg(self, lambda_, w1, w2):
+    #     """Compute L1-regularization cost"""
+    #     return (lambda_ / 2.0) * (np.abs(w1[:, 1:]).sum() +
+    #                               np.abs(w2[:, 1:]).sum())
 
-    def _L1_reg(self, lambda_, w1, w2):
+    def _L2_reg(self, lambda_, weights):
+        """Compute L2-regularization cost"""
+        values = [np.sum(w[:, 1:]) ** 2 for w in weights]
+        return (lambda_ / 2.0) * sum(values)
+
+
+    def _L1_reg(self, lambda_, weights):
         """Compute L1-regularization cost"""
-        return (lambda_ / 2.0) * (np.abs(w1[:, 1:]).sum() +
-                                  np.abs(w2[:, 1:]).sum())
+        values = [np.sum(np.abs((w[:, 1:]))) for w in weights]
+        return (lambda_ / 2.0) * sum(values)
 
     def _get_cost(self, y_enc, output, w1, w2):
+        # TODO： change definition here
         """Compute cost function.
 
         Parameters
@@ -222,8 +235,9 @@ class NeuralNetMLP(object):
         term1 = -y_enc * (np.log(output))
         term2 = (1.0 - y_enc) * np.log(1.0 - output)
         cost = np.sum(term1 - term2)
-        L1_term = self._L1_reg(self.l1, w1, w2)
-        L2_term = self._L2_reg(self.l2, w1, w2)
+
+        L1_term = self._L1_reg(self.l1, self.weights)
+        L2_term = self._L2_reg(self.l2, self.weights)
         cost = cost + L1_term + L2_term
         return cost
 
@@ -322,8 +336,10 @@ class NeuralNetMLP(object):
         X_data, y_data = X.copy(), y.copy()
         y_enc = self._encode_labels(y, self.n_output)  # Vecteur one-hot
 
-        delta_w1_prev = np.zeros(self.w1.shape)
-        delta_w2_prev = np.zeros(self.w2.shape)
+        # delta_w1_prev = np.zeros(self.w1.shape)
+        # delta_w2_prev = np.zeros(self.w2.shape)
+        # the following line replace the two previous line
+        delta_weights_prev = [np.zeros_like(w) for w in self.weights]
 
         for i in range(self.epochs):  # Nombre de passage sur le dataset
 
@@ -351,13 +367,21 @@ class NeuralNetMLP(object):
                 # compute gradient via backpropagation
                 #
                 # Nous verrons plus en détails
-                grad1, grad2 = self._get_gradient(a1=a1, a2=a2, a3=a3, z2=z2, y_enc=y_enc[:, idx], w1=self.w1,
-                                                  w2=self.w2)
+                # grad1, grad2 = self._get_gradient(a1=a1, a2=a2, a3=a3, z2=z2, y_enc=y_enc[:, idx], w1=self.w1, w2=self.w2)
+                # delta_w1, delta_w2 = self.eta * grad1, self.eta * grad2
 
-                delta_w1, delta_w2 = self.eta * grad1, self.eta * grad2
-                self.w1 -= (delta_w1 + (self.alpha * delta_w1_prev))
-                self.w2 -= (delta_w2 + (self.alpha * delta_w2_prev))
-                delta_w1_prev, delta_w2_prev = delta_w1, delta_w2
+                # TODO: change syntax here
+                grads = self._get_gradient(a1=a1, a2=a2, a3=a3, z2=z2, y_enc=y_enc[:, idx], w1=self.weights[0], w2=self.weights[1])
+                deltas = [self.eta * g for g in grads]
+
+
+                # self.w1 -= (delta_w1 + (self.alpha * delta_w1_prev))
+                # self.w2 -= (delta_w2 + (self.alpha * delta_w2_prev))
+                # delta_w1_prev, delta_w2_prev = delta_w1, delta_w2
+
+                # the following two lines, alone with previous changes, replace the three lines above (commented)
+                self.weights = [weight - delta + (self.alpha * delta_prev) for weight, delta, delta_prev in zip(self.weights, deltas, delta_weights_prev)]
+                delta_weights_prev = deltas
 
         return self
 
