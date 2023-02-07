@@ -206,7 +206,7 @@ class NeuralNetMLP(object):
         values = [np.sum(np.abs((w[:, 1:]))) for w in weights]
         return (lambda_ / 2.0) * sum(values)
 
-    def _get_cost(self, y_enc, output, w1, w2):
+    def _get_cost(self, y_enc, output, weights):
         # TODO： change definition here
         """Compute cost function.
 
@@ -216,10 +216,12 @@ class NeuralNetMLP(object):
             one-hot encoded class labels.
         output : array, shape = [n_output_units, n_samples]
             Activation of the output layer (feedforward)
-        w1 : array, shape = [n_hidden_units, n_features]
-            Weight matrix for input layer -> hidden layer.
-        w2 : array, shape = [n_output_units, n_hidden_units]
-            Weight matrix for hidden layer -> output layer.
+
+        # the follwing defnition is no longer appliable
+        # w1 : array, shape = [n_hidden_units, n_features]
+        #     Weight matrix for input layer -> hidden layer.
+        # w2 : array, shape = [n_output_units, n_hidden_units]
+        #     Weight matrix for hidden layer -> output layer.
 
         Returns
         ---------
@@ -231,14 +233,16 @@ class NeuralNetMLP(object):
         term2 = (1.0 - y_enc) * np.log(1.0 - output)
         cost = np.sum(term1 - term2)
 
-        L1_term = self._L1_reg(self.l1, self.weights)
-        L2_term = self._L2_reg(self.l2, self.weights)
+        L1_term = self._L1_reg(self.l1, weights)
+        L2_term = self._L2_reg(self.l2, weights)
         cost = cost + L1_term + L2_term
         return cost
 
     #
     # Nous verrons plus tard
     #
+
+    # TODO: change definition here
     def _get_gradient(self, a1, a2, a3, z2, y_enc, w1, w2):
         """ Compute gradient step using backpropagation.
 
