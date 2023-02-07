@@ -46,7 +46,7 @@ class NeuralNetMLP(object):
 
     """
 
-    def __init__(self, n_output, n_features, n_hidden=30, l1=0.0, l2=0.0, epochs=500, eta=0.001, alpha=0.0,
+    def __init__(self, n_output, n_features, n_hidden=[30, ], l1=0.0, l2=0.0, epochs=500, eta=0.001, alpha=0.0,
                  decrease_const=0.0, shuffle=True, minibatches=1, random_state=None):
 
         np.random.seed(random_state)
@@ -84,13 +84,18 @@ class NeuralNetMLP(object):
 
     def _initialize_weights(self):
         """Initialize weights with small random numbers."""
-        w1 = np.random.uniform(-1.0, 1.0,
-                               size=self.n_hidden * (self.n_features + 1))
-        w1 = w1.reshape(self.n_hidden, self.n_features + 1)
+        weights = list()
+        for n_hidden in self.n_hidden:
+            w1 = np.random.uniform(-1.0, 1.0,
+                                size=n_hidden * (self.n_features + 1))
+            w1 = w1.reshape(n_hidden, self.n_features + 1)
+            weights.append(w1)
+
         w2 = np.random.uniform(-1.0, 1.0,
-                               size=self.n_output * (self.n_hidden + 1))
-        w2 = w2.reshape(self.n_output, self.n_hidden + 1)
-        return w1, w2
+                               size=self.n_output * (n_hidden + 1))
+        w2 = w2.reshape(self.n_output, n_hidden + 1)
+        weights.append(w2)
+        return weights
 
     def _sigmoid(self, z):
         """Compute logistic function (sigmoid)
@@ -359,8 +364,8 @@ class NeuralNetMLP(object):
                 # feedforward
 
                 [a1, a2, a3], [z2, z3] = self._feedforward(X_data[idx], self.weights) 
-                # TODO: change syntax here
-                cost = self._get_cost(y_enc=y_enc[:, idx], output=a3, w1=self.weights[0], w2=self.weights[1])
+
+                cost = self._get_cost(y_enc=y_enc[:, idx], output=a3, w1=self.w1, w2=self.w2)
                 self.cost_.append(cost)
 
                 # compute gradient via backpropagation
