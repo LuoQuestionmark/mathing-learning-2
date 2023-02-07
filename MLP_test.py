@@ -26,7 +26,8 @@ X_test, y_test = load_mnist('./', kind='t10k')
 
 nn = MLP.NeuralNetMLP(n_output=10,
                   n_features=X_train.shape[1],
-                  n_hidden=50,
+                #   n_hidden=50,
+                  n_hidden=[50, 50],
                   l2=0.1,
                   l1=0.0,
                   epochs=1,
