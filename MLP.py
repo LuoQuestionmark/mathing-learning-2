@@ -355,8 +355,8 @@ class NeuralNetMLP(object):
                                  'Use X[:,None] for 1-feature classification,'
                                  '\nor X[[i]] for 1-sample classification')
 
-        [a1, a2, a3, a4], [z2, z3, z4] = self._feedforward(X, self.weights)
-        y_pred = np.argmax(z3, axis=0)
+        ax, zx = self._feedforward(X, self.weights)
+        y_pred = np.argmax(zx[-1], axis=0)
         return y_pred
 
     #
