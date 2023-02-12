@@ -1,7 +1,9 @@
+from copy import copy
 import numpy as np
 from scipy.special import expit
 import sys
 
+from itertools import chain
 
 # Implémentation du MLP
 # Couche d'entrées, 1 couche cachée et couche de sorties
@@ -85,16 +87,22 @@ class NeuralNetMLP(object):
     def _initialize_weights(self):
         """Initialize weights with small random numbers."""
         weights = list()
-        for n_hidden in self.n_hidden:
-            w1 = np.random.uniform(-1.0, 1.0,
-                                size=n_hidden * (self.n_features + 1))
-            w1 = w1.reshape(n_hidden, self.n_features + 1)
-            weights.append(w1)
+        sizes = list(chain([self.n_features], self.n_hidden, [self.n_output]))
 
-        w2 = np.random.uniform(-1.0, 1.0,
-                               size=self.n_output * (n_hidden + 1))
-        w2 = w2.reshape(self.n_output, n_hidden + 1)
-        weights.append(w2)
+        for s1, s2 in zip(sizes[:-1], sizes[1:]):
+            w = np.random.uniform(-1, 1, size=(s2, s1+1))
+            weights.append(w)
+        # for n_hidden in self.n_hidden:
+        #     w1 = np.random.uniform(-1.0, 1.0,
+        #                         size=n_hidden * (self.n_features + 1))
+        #     w1 = w1.reshape(n_hidden, self.n_features + 1)
+        #     weights.append(w1)
+
+        # w2 = np.random.uniform(-1.0, 1.0,
+        #                        size=self.n_output * (n_hidden + 1))
+        # w2 = w2.reshape(self.n_output, n_hidden + 1)
+        # weights.append(w2)
+
         return weights
 
     def _sigmoid(self, z):
@@ -248,7 +256,8 @@ class NeuralNetMLP(object):
     #
 
     # TODO: change definition here
-    def _get_gradient(self, a1, a2, a3, z2, y_enc, w1, w2):
+    # def _get_gradient(self, a1, a2, a3, z2, y_enc, w1, w2):
+    def _get_gradient(self, ax, zx, y_enc, weights):
         """ Compute gradient step using backpropagation.
 
         Parameters
@@ -277,20 +286,55 @@ class NeuralNetMLP(object):
 
         """
         # backpropagation
-        sigma3 = a3 - y_enc  # erreur de classification
-        z2 = self._add_bias_unit(z2, how='row')
-        sigma2 = w2.T.dot(sigma3) * self._sigmoid_gradient(z2)
-        sigma2 = sigma2[1:, :]
-        grad1 = sigma2.dot(a1)
-        grad2 = sigma3.dot(a2.T)
+        # sigma3 = a3 - y_enc  # erreur de classification
+        # z2 = self._add_bias_unit(z2, how='row')
+        # sigma2 = w2.T.dot(sigma3) * self._sigmoid_gradient(z2)
+        # sigma2 = sigma2[1:, :]
+        # grad1 = sigma2.dot(a1)
+        # grad2 = sigma3.dot(a2.T)
 
-        # regularize
-        grad1[:, 1:] += self.l2 * w1[:, 1:]
-        grad1[:, 1:] += self.l1 * np.sign(w1[:, 1:])
-        grad2[:, 1:] += self.l2 * w2[:, 1:]
-        grad2[:, 1:] += self.l1 * np.sign(w2[:, 1:])
+        # calculate the last sigma value
+        sigmas = list()
+        sigmas.append(ax[-1] - y_enc)
+        sigma = sigmas[-1]
 
-        return grad1, grad2
+        # exclude the last z value, which is not used in the calculation; besides, this line makes a copy
+        zx = zx[:-1]
+        
+        # make a copy of weights since it will be used later
+        weights_2 = copy(weights)
+
+        # for similar reason, treat the weights values
+        weights = weights[1:]
+
+        # transpose the first value of ax, make a copy
+        ax = [ax[0].T] + ax [1:]
+        
+        for z, w in zip(reversed(zx), reversed(weights)):
+            z = self._add_bias_unit(z, how='row')
+            sigma = w.T.dot(sigma) * self._sigmoid_gradient(z)
+            sigma = sigma[1:, :]
+            sigmas.append(sigma)
+
+        # reverse (back) the result of sigma for the next step
+        sigmas.reverse()
+
+        grads = list()
+        for a, sigma, w in zip(ax, sigmas, weights_2):
+            temp = sigma.dot(a.T)
+            temp[:, 1:] += self.l2 * w[:, 1:]
+            temp[:, 1:] += self.l1 * np.sign(w[:, 1:])
+            grads.append(temp)
+
+
+        # # regularize
+        # grad1[:, 1:] += self.l2 * w1[:, 1:]
+        # grad1[:, 1:] += self.l1 * np.sign(w1[:, 1:])
+        # grad2[:, 1:] += self.l2 * w2[:, 1:]
+        # grad2[:, 1:] += self.l1 * np.sign(w2[:, 1:])
+        # return grad1, grad2
+
+        return grads
 
     def predict(self, X):
         """Predict class labels
@@ -311,7 +355,7 @@ class NeuralNetMLP(object):
                                  'Use X[:,None] for 1-feature classification,'
                                  '\nor X[[i]] for 1-sample classification')
 
-        [a1, a2, a3], [z2, z3] = self._feedforward(X, self.weights)
+        [a1, a2, a3, a4], [z2, z3, z4] = self._feedforward(X, self.weights)
         y_pred = np.argmax(z3, axis=0)
         return y_pred
 
@@ -363,9 +407,9 @@ class NeuralNetMLP(object):
             for idx in mini:
                 # feedforward
 
-                [a1, a2, a3], [z2, z3] = self._feedforward(X_data[idx], self.weights) 
+                [a1, a2, a3, a4], [z2, z3, z4] = self._feedforward(X_data[idx], self.weights) 
 
-                cost = self._get_cost(y_enc=y_enc[:, idx], output=a3, w1=self.w1, w2=self.w2)
+                cost = self._get_cost(y_enc=y_enc[:, idx], output=a4, weights=self.weights)
                 self.cost_.append(cost)
 
                 # compute gradient via backpropagation
@@ -375,7 +419,7 @@ class NeuralNetMLP(object):
                 # delta_w1, delta_w2 = self.eta * grad1, self.eta * grad2
 
                 # TODO: change syntax here
-                grads = self._get_gradient(a1=a1, a2=a2, a3=a3, z2=z2, y_enc=y_enc[:, idx], w1=self.weights[0], w2=self.weights[1])
+                grads = self._get_gradient(ax = [a1, a2, a3, a4], zx=[z2, z3, z4], y_enc=y_enc[:, idx], weights=self.weights)
                 deltas = [self.eta * g for g in grads]
 
 
