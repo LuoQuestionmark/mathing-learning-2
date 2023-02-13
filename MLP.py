@@ -407,9 +407,9 @@ class NeuralNetMLP(object):
             for idx in mini:
                 # feedforward
 
-                [a1, a2, a3, a4], [z2, z3, z4] = self._feedforward(X_data[idx], self.weights) 
+                ax, zx = self._feedforward(X_data[idx], self.weights) 
 
-                cost = self._get_cost(y_enc=y_enc[:, idx], output=a4, weights=self.weights)
+                cost = self._get_cost(y_enc=y_enc[:, idx], output=ax[-1], weights=self.weights)
                 self.cost_.append(cost)
 
                 # compute gradient via backpropagation
@@ -419,7 +419,7 @@ class NeuralNetMLP(object):
                 # delta_w1, delta_w2 = self.eta * grad1, self.eta * grad2
 
                 # TODO: change syntax here
-                grads = self._get_gradient(ax = [a1, a2, a3, a4], zx=[z2, z3, z4], y_enc=y_enc[:, idx], weights=self.weights)
+                grads = self._get_gradient(ax = ax, zx=zx, y_enc=y_enc[:, idx], weights=self.weights)
                 deltas = [self.eta * g for g in grads]
 
 

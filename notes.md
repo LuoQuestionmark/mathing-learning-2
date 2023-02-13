@@ -20,3 +20,11 @@ The order of calculation:
 a1, z2, a2, z3, a3, z4, a4
 ```
 
+## hyperparameters
+
+A new section is to calibrate the hyperparameters. To do this, there should be two new parts:
+
+- a function that evaluate the average performance
+- a function that test multiple combination of possible values to ensure the best performance
+
+The first part is already implemented, sorts of, by the code in the file `MLP_test`, for now I would just adjust it to a more textual version ; the second part is not very complicated, either. A minimum implementation is to try a serie of value by a nested `for` cycle.
